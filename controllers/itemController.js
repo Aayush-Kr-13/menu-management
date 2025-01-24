@@ -34,3 +34,22 @@ exports.editItem = async (req, res) => {
         throw new Error(error.message);
     }
 };
+
+// Search Items by Name
+exports.searchItemsByName = async (req, res) => {
+    try {
+        const searchQuery = req.query.name; // Get the 'name' query parameter
+        if (!searchQuery) {
+            res.status(400);
+            throw new Error('Name query parameter is required.');
+        }
+
+        const items = await Item.find({
+            name: { $regex: searchQuery, $options: 'i' }, // Case-insensitive search
+        });
+        res.status(200).json(items);
+    } catch (error) {
+        res.status(500);
+        throw new Error(error.message);
+    }
+};
