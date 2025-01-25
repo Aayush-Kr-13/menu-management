@@ -47,7 +47,7 @@ exports.getCategoryByNameOrId = async (req, res) => {
 
         let category;
         if (id) {
-            category = await Category.findById(id); // Find by ID
+            category = await Category.findById(id);
         } else if (name) {
             category = await Category.findOne({ name: { $regex: name, $options: 'i' } }); // Find by Name (case-insensitive)
         }

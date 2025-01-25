@@ -5,24 +5,38 @@ const itemSchema = new mongoose.Schema({
     image: { type: String },
     description: { type: String },
     taxApplicable: { type: Boolean, default: false },
-    tax: { type: Number, default: 0 }, // Tax as a percentage 
+    tax: { type: Number, default: 0 }, // Tax as a percentage
     baseAmount: { type: Number, required: true },
     discount: { type: Number, default: 0 },
-    totalAmount: { type: Number }, 
+    totalAmount: { type: Number },
     subCategoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'SubCategory' },
-    categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
+    categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
 });
 
-itemSchema.pre('save', function (next) {
-    const discountedAmount = this.baseAmount - this.discount; 
-    let total = discountedAmount;
+// Pre-save hook to calculate totalAmount
+itemSchema.pre('save', async function (next) {
+    try {
+        const category = await mongoose.model('Category').findById(this.categoryId);
 
-    if (this.taxApplicable && this.tax > 0) {
-        total += (this.baseAmount * this.tax) / 100; 
+        if (!category) {
+            return next(new Error('Category not found'));
+        }
+
+        this.taxApplicable = category.taxApplicable;
+        this.tax = category.tax || 0;
+
+        const discountedAmount = this.baseAmount - this.discount;
+        let total = discountedAmount;
+
+        if (this.taxApplicable && this.tax > 0) {
+            total += (discountedAmount * this.tax) / 100; 
+        }
+
+        this.totalAmount = total;
+        next();
+    } catch (err) {
+        next(err);
     }
-
-    this.totalAmount = total;
-    next();
 });
 
 module.exports = mongoose.model('Item', itemSchema);
